@@ -2,6 +2,12 @@ from flask import Flask
 
 app = Flask(__name__)
 
+about_me = {
+    "name": "Александр",
+    "surname": "Егоров",
+    'email': "egorov1011@gmail.com"
+}
+
 @app.route("/")
 def hello_world():
     return "Hello, World!"
