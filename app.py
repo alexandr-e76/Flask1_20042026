@@ -46,8 +46,21 @@ def about():
     return about_me
 
 @app.route("/quotes")
-def get_quotes():
+def get_quotes()->list[dict[str, any]]:
     return quotes
+
+app.route("/params/<value>")
+def param_example(value: str):
+    return jsonify(param = value)
+
+@app.route("/quotes/<int:qute_id>")
+def get_quotes(qute_id:int)->dict:
+    for quote in   quotes:
+        if quote["id"] == qute_id:
+            return jsonify(quote), 200
+    return {"error": f"quote with id= {qute_id} not found"}, 404
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
