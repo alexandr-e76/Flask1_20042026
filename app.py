@@ -1,4 +1,6 @@
 from flask import Flask, jsonify
+from typing import Any
+from random import choice
 
 app = Flask(__name__)
 
@@ -60,6 +62,13 @@ def get_quotes(qute_id:int)->dict:
             return jsonify(quote), 200
     return {"error": f"quote with id= {qute_id} not found"}, 404
 
+app.get("/quotes/count")
+def quotes_count():
+    return jsonify(count = len(quotes))
+
+@app.route("/quotes/random", methods=["GET"])
+def random_quotes() -> dict:
+    return jsonify(choice(quotes))
 
 
 if __name__ == "__main__":
