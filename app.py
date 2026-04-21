@@ -51,7 +51,7 @@ def about():
 def get_quotes()->list[dict[str, any]]:
     return quotes
 
-app.route("/params/<value>")
+@app.route("/params/<value>")
 def param_example(value: str):
     return jsonify(param = value)
 
@@ -62,7 +62,7 @@ def get_quotes_by_id(quote_id:int)->dict:
             return jsonify(quote), 200
     return {"error": f"quote with id= {qute_id} not found"}, 404
 
-app.get("/quotes/count")
+@app.get("/quotes/count")
 def quotes_count():
     return jsonify(count = len(quotes))
 
@@ -70,13 +70,48 @@ def quotes_count():
 def random_quotes() -> dict:
     return jsonify(choice(quotes))
 
+@app.route("/quotes/filter")
+def filter_quotes():
+    filtered_quotes = quotes.copy()
+    for key, value in request.args.items():
+        if key not in ["author", "rating"]:
+            return f"Invalid key{key}", HTTPStatus.BAD_REQUEST
+        if key == "rating":
+            value = int(value)
+        filter_quotes =[
+            quote
+        for quote in filtered_quotes
+        if quote[key] == value
+        ]
+    return filtered_quotes
+
+
+
 @app.route("/quotes", methods=['POST'])
 def create_quote():
     new_qoute = request.json
     new_id = last_quote["id"] +1
     new_qoute["id"] = new_id
+    rating = new_qoute.get("rating")
+    if rating is None or rating not in range(1,6):
+        new_qoute["rating"] = 1
     quotes.append(new_qoute)
     return jsonify(new_qoute), 201
+
+@app.route("/quotes/<int:quote_id>", methods=["PUT"])
+def edit_quote(quote_id):
+    new_data = request.json
+    if not set(new_data.keys()) - set("author", "rating", "text")
+        for quote in quotes:
+            if quote["id"] == qute_id:
+                if "rating" in new_data["rating"] not in range(1,6):
+                new_data.pop ("rating")
+            quote.update(new_data)    
+            return jsonify(quote), HTTPStatus.OK
+    else:
+            return {"error": "Send bad data to update"}, HTTPStatus.BAD_REQUEST
+    return {"error": f"quote with id= {qute_id} not found"}, 404
+
 
 @app.route("/quotes/<int:quote_id>", methods=["DELETE"])
 def get_quotes_by_id(quote_id:int):
@@ -85,6 +120,21 @@ def get_quotes_by_id(quote_id:int):
             quotes.remove(quote)
             return jsonify({"message": f"quote with id={quote_id} has deleted"}), 200
     return {"error": f"quote with id= {qute_id} not found"}, 404
+
+@app.route("/quotes/filter")
+def filter_quotes():
+    filtered_quotes = quotes.copy()
+    for key, value in request.args.items():
+        if key not in ["author", "rating"]:
+            return f"Invalid key{key}", HTTPStatus.BAD_REQUEST
+        if key = "rating":
+            value = int(value)
+        filtered_quotes = [quote for quote in filter_quotes if quote.get[key] == value]
+        filtered_quotes = []
+        for quote in filter_quotes:
+            if quote[key] == value:
+                filtered_quotes.append(quote)  
+    return filtered_quotes
 
 
 if __name__ == "__main__":
