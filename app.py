@@ -98,9 +98,9 @@ def get_quotes_by_id(quote_id:int)->dict:
 def quotes_count():
     return jsonify(count = len(quotes))
 
-@app.route("/quotes/random", methods=["GET"])
-def random_quotes() -> dict:
-    return jsonify(choice(quotes))
+# @app.route("/quotes/random", methods=["GET"])
+# def random_quotes() -> dict:
+#     return jsonify(choice(quotes))
 
 @app.route("/quotes/filter")
 def filter_quotes():
