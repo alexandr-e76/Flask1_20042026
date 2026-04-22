@@ -5,6 +5,15 @@ from http import HTTPStatus
 from pathlib import Path
 import sqlite3
 from werkzeug.exceptions import HTTPException
+# import for sqlalchemy
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String
+
+class Base(DeclarativeBase):
+    pass
+
 
 BASE_DIR = Path(__file__).parent
 path_to_db = BASE_DIR / "store.db" # <- тут путь к БД
@@ -13,6 +22,20 @@ connection = sqlite3.connect(path_to_db)
 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{BASE_DIR / 'main.db'}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(model_class=Base)
+db.init_app(app)
+
+class QuteModel(db.Model):
+    __tablename__ = 'quotes'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    author: Mapped[str] = mapped_column(String(32))
+    text: Mapped[str] = mapped_column(String(255))
+
+    def __init__(self, author, text)
 
 def get_db():
     db = getattr(g, '_database', None)
