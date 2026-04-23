@@ -9,7 +9,10 @@ from werkzeug.exceptions import HTTPException
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String
+from sqlalchemy import String, func, ForeignKey
+from sqlalchemy.exc import SQLAlchemyError, InvalidRequestError
+from flask_migrate import Migrate
+
 
 class Base(DeclarativeBase):
     pass
@@ -22,51 +25,61 @@ connection = sqlite3.connect(path_to_db)
 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{BASE_DIR / 'main.db'}"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{BASE_DIR / 'qutes.db'}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
-
+migrate = Migrate(app, db)
 class QuteModel(db.Model):
     __tablename__ = 'quotes'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     author: Mapped[str] = mapped_column(String(32))
     text: Mapped[str] = mapped_column(String(255))
+    rating: Mapped[int] = mapped_column(default=1)
+    def __init__(self, author, text, rating):
+        self.author = author
+        self.text = text
+        self.rating = rating
 
-    def __init__(self, author, text)
+    def to_dict(self):
+        return{
+            "id": self.id,
+            "author": self.author,
+            "text": self.text
+            }
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(path_to_db)
-    return db
+#     def get_db():
+#     db = getattr(g, '_database', None)
+#     if db is None:
+#         db = g._database = sqlite3.connect(path_to_db)
+#     return db
 
-@app.teardown_appcontext
-def close_connection(exception):   
-    db = getattr(g, '_database', None)
-    if db is None:
-        db.close()
+# @app.teardown_appcontext
+# def close_connection(exception):   
+#     db = getattr(g, '_database', None)
+#     if db is None:
+#         db.close()
 
 @app.errorhandler(HTTPException)    # Функция для перевата HTTP ошибок и возврата в виде JSON
 def handle_exception(e):
     return jsonify({"message": e.description}), e.code
 
-create_table = """
-CREATE TABLE IF NOT EXISTS quotes (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-author TEXT NOT NULL,
-text TEXT NOT NULL,
-rating INTEGER NOT NULL
-);
-"""
-connection = sqlite3.connect("name.db")
-cursor = connection.cursor()
-cursor.execute(create_table)
-connection.commit()
-cursor.close()
-connection.close()
+# create_table = """
+# CREATE TABLE IF NOT EXISTS quotes (
+# id INTEGER PRIMARY KEY AUTOINCREMENT,
+# author TEXT NOT NULL,
+# text TEXT NOT NULL,
+# rating INTEGER NOT NULL
+# );
+# """
+# connection = sqlite3.connect("name.db")
+# cursor = connection.cursor()
+# cursor.execute(create_table)
+# connection.commit()
+# cursor.close()
+# connection.close()
 
 # about_me = {
 #     "name": "Александр",
