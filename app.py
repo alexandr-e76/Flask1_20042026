@@ -12,8 +12,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, func, ForeignKey
 from sqlalchemy.exc import SQLAlchemyError, InvalidRequestError
 from flask_migrate import Migrate
-
-
+from alembic import op
+from sqlalchemy.orm import relationship
+import sqlalchemy as sa
+from app import db, QuoteModel, AuthorModel
 class Base(DeclarativeBase):
     pass
 
@@ -31,13 +33,28 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 migrate = Migrate(app, db)
+
+class AuthorModel(db.Model):
+    __tablename__ = 'authors'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    author: Mapped[str] = mapped_column(String(32))
+    quotes: Mapped[list['QuteModel']] = relationship(back_populates = 'author', lazy = 'dynamic')
+
+    def __init__(self, name):
+        self.name = name
+
+    def to_dict(self):
+        return{'name':self.name}
+
 class QuteModel(db.Model):
     __tablename__ = 'quotes'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    author: Mapped[str] = mapped_column(String(32))
+    author_id: Mapped[str] = mapped_column(ForeignKey('authors.id'))
+    author: Mapped['AuthorModel'] = relationship(back_populates = 'quotes')
     text: Mapped[str] = mapped_column(String(255))
     rating: Mapped[int] = mapped_column(default=1)
+
     def __init__(self, author, text, rating):
         self.author = author
         self.text = text
@@ -212,19 +229,32 @@ def filter_quotes():
 #     quotes.append(new_qoute)
 #     return jsonify(new_qoute), 201
 
-
-@app.route("/quotes", methods=['POST'])
-def create_quote():
+@app.route("/authors/<int:author_id>/quotes", methods=["POST"])
+def create_quote(author_id: int):
+    author = db.session.get(author_id)
     new_quote = request.json
-    insert_quote = "INSERT INTO quotes (author, text, rating) VALUES (?, ?, ?)"
-    connection = get_db()
-    cursor = connection.cursor()
-    cursor.execute(insert_quote, (new_quote['author'], new_quote['text'], new_quote['rating']))
-    answer = cursor.lastrowid # Получаем из базы  id новой цитаты
-    connection.commit()
-    new_quote['id'] = answer
-    return jsonify(new_quote), 201
-    
+    q = QuoteModel(author, new_quote["text"])
+    db.session.add(q)
+    db.session.commit()
+    return q.to_dict(), 201
+# @app.route("/quotes", methods=['POST'])
+# def create_quote():
+#     new_quote = request.json
+#     insert_quote = "INSERT INTO quotes (author, text, rating) VALUES (?, ?, ?)"
+#     connection = get_db()
+#     cursor = connection.cursor()
+#     cursor.execute(insert_quote, (new_quote['author'], new_quote['text'], new_quote['rating']))
+#     answer = cursor.lastrowid # Получаем из базы  id новой цитаты
+#     connection.commit()
+#     new_quote['id'] = answer
+#     return jsonify(new_quote), 201
+@app.route("/authors", methods=["POST"])
+def create_author():
+    author_data = request.json
+    author = AuthorModel(author_data["name"])
+    db.session.add(author)
+    db.session.commit()
+    return author.to_dict(), 201
 
 @app.route("/quotes/<int:quote_id>", methods=["PUT"])
 def edit_quote(quote_id):
